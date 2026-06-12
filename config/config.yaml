@@ -1,0 +1,124 @@
+# Daily arXiv Digest 配置文件
+# 复制 .env.example 为 .env 后，将 API Key 和邮箱授权码写入 .env。
+
+app:
+  language: "zh"  # zh 或 en
+
+arxiv:
+  # arXiv 分类。常见分类：cs.LG, cs.AI, cs.CV, cs.CL, cs.NE, stat.ML
+  categories:
+    - "cs.LG"
+    - "cs.AI"
+    - "cs.CV"
+    - "cs.CL"
+    - "stat.ML"
+
+  # 关键词硬过滤。推荐留空，由 LLM 智能过滤负责判断相关性。
+  keywords: []
+
+  # adaptive_fetch.enabled=false 时使用的固定窗口大小。
+  # adaptive_fetch.enabled=true 时，它只是 fallback 参数。
+  max_results: 100
+  sort_by: "submittedDate"
+  sort_order: "descending"
+
+# 自适应分页抓取：当最新窗口重复率高时，自动继续向更旧页面翻页。
+adaptive_fetch:
+  enabled: true
+  min_unseen_papers: 50     # 希望每天至少收集多少篇未爬取候选论文，再送入 LLM 过滤
+  page_size: 100            # 每页请求数量，建议 <=100
+  max_scan_results: 500     # 单次任务最多扫描多少篇，防止请求过多
+  backfill_days: 14         # 最多回看多少天内的论文
+  delay_seconds: 15         # arXiv 请求间隔；共享服务器建议设大一点
+  num_retries: 1            # 429/503 时不要高频重试
+
+# 去重：seen 用于避免重复进入 LLM，pushed 用于避免重复邮件推送。
+dedupe:
+  enabled: true
+  state_path: "data/state/papers_state.json"
+  keep_days: 180
+
+# LLM 智能过滤。只有未 seen 的候选论文会进入 LLM 过滤。
+llm_filter:
+  enabled: true
+  threshold: 0.65
+  max_selected: 20
+  fail_open: true
+  topic: |
+    我关注模型压缩、模型加速、高效多模态大模型、高效长上下文、推理加速、训练加速相关论文。
+    相关方向包括 quantization, pruning, sparsity, distillation, efficient inference,
+    KV cache compression, speculative decoding, long-context efficiency, efficient MLLM/VLM,
+    distributed training, memory-efficient training 等。
+    如果论文只是普通模型、数据集、benchmark 或应用系统，而没有明显效率、压缩、加速或部署贡献，请判为不相关。
+
+# 邮件日报展示设置
+email_digest:
+  max_papers: "all"  # all 表示展示全部 LLM 过滤后的论文；也可设为数字，例如 20
+
+llm:
+  # provider 可选：openai, gemini, claude, deepseek, vllm
+  provider: "deepseek"
+
+  openai:
+    api_key: ""
+    model: "gpt-4o-mini"
+    base_url: ""
+    temperature: 0.2
+    max_tokens: 8192
+
+  gemini:
+    api_key: ""
+    model: "gemini-1.5-flash"
+    temperature: 0.2
+    max_tokens: 8192
+
+  claude:
+    api_key: ""
+    model: "claude-3-5-sonnet-20241022"
+    temperature: 0.2
+    max_tokens: 8192
+
+  deepseek:
+    api_key: ""
+    model: "deepseek-chat"
+    base_url: "https://api.deepseek.com"
+    temperature: 0.2
+    max_tokens: 8192
+
+  # vLLM 或其他 OpenAI-compatible 服务
+  vllm:
+    api_key: "EMPTY"
+    model: "your-vllm-model-name"
+    base_url: "http://localhost:8000/v1"
+    temperature: 0.2
+    max_tokens: 8192
+
+scheduler:
+  enabled: true
+  run_time: "09:00"
+  timezone: "Asia/Shanghai"
+  run_on_start: false
+
+  notification:
+    enabled: true
+    email:
+      smtp_server: "smtp.gmail.com"
+      smtp_port: 587
+      sender: "your-email@example.com"
+      password: ""  # 推荐在 .env 中设置 EMAIL_PASSWORD
+      recipients:
+        - "recipient@example.com"
+      on_success: true
+      on_failure: true
+
+storage:
+  type: "json"
+  json_path: "data/papers"
+  sqlite_path: "data/arxiv.db"
+  retention_days: 30
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/daily_arxiv.log"
+  console: true
