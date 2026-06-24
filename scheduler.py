@@ -29,6 +29,8 @@ NO_PUSH_STATUSES = {
     "no_matching_papers",
 }
 
+DEFAULT_MISFIRE_GRACE_TIME = 300
+
 
 def _extract_items(obj, preferred_keys=("papers", "summaries", "data", "items", "results")):
     """兼容 list、{'papers': [...]}, {'summaries': [...]}, {'id': {...}} 等多种 JSON 结构"""
@@ -364,6 +366,25 @@ def main():
     run_time = scheduler_config.get("run_time", "09:00")
     timezone = scheduler_config.get("timezone", "Asia/Shanghai")
     run_on_start = scheduler_config.get("run_on_start", True)
+    misfire_grace_time = scheduler_config.get(
+        "misfire_grace_time",
+        DEFAULT_MISFIRE_GRACE_TIME,
+    )
+
+    try:
+        misfire_grace_time = int(misfire_grace_time)
+        if misfire_grace_time < 1:
+            raise ValueError
+    except (TypeError, ValueError):
+        logger.error(text(
+            "misfire_grace_time 必须是大于 0 的整数秒数",
+            "misfire_grace_time must be a positive integer number of seconds"
+        ))
+        print(text(
+            "❌ misfire_grace_time 必须是大于 0 的整数秒数",
+            "❌ misfire_grace_time must be a positive integer number of seconds"
+        ))
+        return
 
     # 解析运行时间 / Parse run time
     try:
@@ -406,6 +427,7 @@ def main():
         name="Daily arXiv Paper Fetching",
         max_instances=1,
         coalesce=True,
+        misfire_grace_time=misfire_grace_time,
     )
 
     # 计算下次运行时间 / Calculate next run time

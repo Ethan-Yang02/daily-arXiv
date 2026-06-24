@@ -272,6 +272,8 @@ python scheduler.py
 
 如果 `scheduler.run_on_start: true`，启动后会立即执行一次；如果是 `false`，则等待每天 `run_time` 执行。
 
+`scheduler.misfire_grace_time` 表示定时任务允许延迟启动的秒数，默认值为 `300`。这可以避免系统短暂繁忙或调度线程晚到一两秒时，整天的任务被直接跳过。
+
 ### 后台启动
 
 ```bash

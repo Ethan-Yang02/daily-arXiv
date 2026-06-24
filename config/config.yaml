@@ -98,6 +98,7 @@ scheduler:
   run_time: "09:00"
   timezone: "Asia/Shanghai"
   run_on_start: false
+  misfire_grace_time: 300  # 允许任务因系统调度等原因最多延迟 5 分钟启动
 
   notification:
     enabled: true
