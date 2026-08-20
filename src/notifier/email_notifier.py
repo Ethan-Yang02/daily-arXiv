@@ -428,7 +428,7 @@ class EmailNotifier:
     <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;padding:18px;margin-top:16px;box-shadow:0 6px 18px rgba(15,23,42,.05);">
       <div style="font-size:18px;font-weight:850;color:#111827;margin-bottom:10px;">☁️ 关键词词云</div>
       <img src="cid:wordcloud" alt="wordcloud" style="width:100%;max-width:820px;border-radius:14px;border:1px solid #e5e7eb;display:block;">
-      <div style="font-size:12px;color:#9ca3af;margin-top:8px;">如果图片没有显示，请查看邮件附件或查看 Web 页面。</div>
+      <div style="font-size:12px;color:#9ca3af;margin-top:8px;">如果图片没有显示，请查看邮件附件。</div>
     </div>
 """
 
@@ -477,7 +477,7 @@ class EmailNotifier:
     <div style="margin-top:24px;margin-bottom:10px;">
       <div style="font-size:22px;font-weight:850;color:#111827;">📄 今日重点论文</div>
       <div style="font-size:14px;color:#6b7280;margin-top:4px;">
-        展示筛选后的重点论文。完整内容可查看本地 Web 页面或 data 目录。
+        展示筛选后的重点论文。完整内容可查看 data 目录。
       </div>
     </div>
 """

@@ -29,8 +29,6 @@ NO_PUSH_STATUSES = {
     "no_matching_papers",
 }
 
-DEFAULT_MISFIRE_GRACE_TIME = 300
-
 
 def _extract_items(obj, preferred_keys=("papers", "summaries", "data", "items", "results")):
     """兼容 list、{'papers': [...]}, {'summaries': [...]}, {'id': {...}} 等多种 JSON 结构"""
@@ -98,25 +96,10 @@ def _get_summary_text(summary_item):
     return str(s) if s else ""
 
 
-def _resolve_max_email_papers(config):
-    """解析邮件最多展示论文数。all/none/0/-1 表示不限制。"""
-    value = config.get("email_digest", {}).get("max_papers", "all")
-    if value is None:
-        return None
-    if str(value).strip().lower() in {"all", "none", "0", "-1"}:
-        return None
-    try:
-        value = int(value)
-        return value if value > 0 else None
-    except Exception:
-        return None
-
-
-def _build_digest_items(papers, summaries, max_email_papers=None):
+def _build_digest_items(papers, summaries, max_email_papers=50):
     digest_items = []
-    papers_for_email = papers if max_email_papers is None else papers[:max_email_papers]
 
-    for i, paper in enumerate(papers_for_email):
+    for i, paper in enumerate(papers[:max_email_papers]):
         summary_text = _get_summary_text(summaries[i]) if i < len(summaries) else ""
 
         categories = paper.get("categories") or []
@@ -142,12 +125,13 @@ def _build_digest_items(papers, summaries, max_email_papers=None):
 def _send_success_email(logger, notifier, duration, text):
     """根据本次 run_status 发送正常日报或 0 篇空日报。"""
     current_config = load_config()
-    run_status = load_json(Path("data/run_status/latest.json")) or {}
+    run_status = load_json(project_root / "data/run_status/latest.json") or {}
     status = run_status.get("status", "")
 
     # 如果今天没有新论文，绝对不要读取旧 summaries/latest.json 或 analysis/latest.json。
     # 否则会把上一次推送过的 analysis/summary 又发一遍。
-    if status in NO_PUSH_STATUSES or int(run_status.get("final_papers_count", -1) or -1) == 0 and status != "success":
+    final_count = int(run_status.get("final_papers_count") or 0)
+    if status in NO_PUSH_STATUSES or (final_count == 0 and status != "success"):
         stats_info = {
             "papers_count": 0,
             "summaries_count": 0,
@@ -180,9 +164,9 @@ def _send_success_email(logger, notifier, duration, text):
         return email_ok
 
     # 正常日报：只在本次确实有最终论文时才读取 latest summaries/analysis
-    papers_raw = load_json(Path("data/papers/latest.json")) or {}
-    summaries_raw = load_json(Path("data/summaries/latest.json")) or {}
-    analysis_raw = load_json(Path("data/analysis/latest.json")) or {}
+    papers_raw = load_json(project_root / "data/papers/latest.json") or {}
+    summaries_raw = load_json(project_root / "data/summaries/latest.json") or {}
+    analysis_raw = load_json(project_root / "data/analysis/latest.json") or {}
 
     papers = _extract_items(papers_raw, preferred_keys=("papers", "data", "items", "results"))
     summaries = _extract_items(summaries_raw, preferred_keys=("summaries", "papers", "data", "items", "results"))
@@ -214,7 +198,7 @@ def _send_success_email(logger, notifier, duration, text):
         "final_papers_count": run_status.get("final_papers_count", len(papers)),
     }
 
-    digest_items = _build_digest_items(papers, summaries, max_email_papers=_resolve_max_email_papers(current_config))
+    digest_items = _build_digest_items(papers, summaries, max_email_papers=50)
 
     # 保险：如果 latest 里没有论文，也发 0 篇空日报，而不是让邮件模板展示旧 analysis。
     if not digest_items:
@@ -366,25 +350,6 @@ def main():
     run_time = scheduler_config.get("run_time", "09:00")
     timezone = scheduler_config.get("timezone", "Asia/Shanghai")
     run_on_start = scheduler_config.get("run_on_start", True)
-    misfire_grace_time = scheduler_config.get(
-        "misfire_grace_time",
-        DEFAULT_MISFIRE_GRACE_TIME,
-    )
-
-    try:
-        misfire_grace_time = int(misfire_grace_time)
-        if misfire_grace_time < 1:
-            raise ValueError
-    except (TypeError, ValueError):
-        logger.error(text(
-            "misfire_grace_time 必须是大于 0 的整数秒数",
-            "misfire_grace_time must be a positive integer number of seconds"
-        ))
-        print(text(
-            "❌ misfire_grace_time 必须是大于 0 的整数秒数",
-            "❌ misfire_grace_time must be a positive integer number of seconds"
-        ))
-        return
 
     # 解析运行时间 / Parse run time
     try:
@@ -427,7 +392,6 @@ def main():
         name="Daily arXiv Paper Fetching",
         max_instances=1,
         coalesce=True,
-        misfire_grace_time=misfire_grace_time,
     )
 
     # 计算下次运行时间 / Calculate next run time

@@ -1,13 +1,14 @@
-#!/usr/bin/env bash
-set -euo pipefail
-cd "$(dirname "$0")/.."
-if [ ! -f logs/scheduler.pid ]; then
-  echo "scheduler 未运行：未找到 logs/scheduler.pid"
-  exit 0
-fi
-PID="$(cat logs/scheduler.pid)"
-if kill -0 "$PID" 2>/dev/null; then
-  ps -fp "$PID"
+#!/bin/bash
+# 查看调度器状态 / Show scheduler status
+PID_FILE="logs/scheduler.pid"
+if [ -f "$PID_FILE" ]; then
+    PID=$(cat "$PID_FILE")
+    if ps -p "$PID" > /dev/null 2>&1; then
+        echo "✅ Scheduler running (PID: $PID)"
+        ps -fp "$PID"
+    else
+        echo "⚠️  Stale PID file (process $PID not found)"
+    fi
 else
-  echo "scheduler 未运行：PID=$PID 不存在"
+    echo "⚠️  Scheduler not running"
 fi

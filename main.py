@@ -20,7 +20,7 @@ from src.utils import load_config, load_env, setup_logging, get_date_string, pic
 
 def write_run_status(status, message="", **kwargs):
     """写入本次运行状态，供 scheduler 判断是否应该发送空日报。"""
-    path = Path("data/run_status/latest.json")
+    path = Path("data") / "run_status" / "latest.json"
     path.parent.mkdir(parents=True, exist_ok=True)
 
     payload = {
@@ -298,7 +298,7 @@ def main():
         logger.info("=" * 60)
         logger.info(text("✅ 所有任务完成！", "✅ All tasks completed!"))
         logger.info("=" * 60)
-        logger.info(text("提示: 运行完成后请查看邮件日报和 data 目录中的结果", "Tip: check email digest and generated files under data/"))
+        logger.info(text("提示: 查看 data/ 目录下的 report 和 analysis 文件", "Tip: check reports and analysis in the data/ directory"))
 
     except Exception as e:
         write_run_status(
@@ -315,7 +315,6 @@ def main():
             error=str(e),
         )
         logger.error(text(f"❌ 执行出错: {str(e)}", f"❌ Execution failed: {str(e)}"), exc_info=True)
-        sys.exit(1)
 
 
 if __name__ == "__main__":

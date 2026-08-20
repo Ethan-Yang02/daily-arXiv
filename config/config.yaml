@@ -1,125 +1,159 @@
-# Daily arXiv Digest 配置文件
-# 复制 .env.example 为 .env 后，将 API Key 和邮箱授权码写入 .env。
+# Daily arXiv Agent Configuration
 
+# 应用配置 / App settings
 app:
-  language: "zh"  # zh 或 en
+  # 部署语言 / Deployment language: zh 或 en
+  language: "zh"
 
 arxiv:
-  # arXiv 分类。常见分类：cs.LG, cs.AI, cs.CV, cs.CL, cs.NE, stat.ML
   categories:
     - "cs.LG"
     - "cs.AI"
     - "cs.CV"
-    - "cs.CL"
-    - "stat.ML"
 
-  # 关键词硬过滤。推荐留空，由 LLM 智能过滤负责判断相关性。
   keywords: []
 
-  # adaptive_fetch.enabled=false 时使用的固定窗口大小。
-  # adaptive_fetch.enabled=true 时，它只是 fallback 参数。
   max_results: 100
+  
+  # 排序方式 / Sort by: submittedDate (提交日期) 或 relevance (相关性)
   sort_by: "submittedDate"
+  
+  # 排序顺序 / Sort order: descending 或 ascending
   sort_order: "descending"
 
-# 自适应分页抓取：当最新窗口重复率高时，自动继续向更旧页面翻页。
-adaptive_fetch:
-  enabled: true
-  min_unseen_papers: 50     # 希望每天至少收集多少篇未爬取候选论文，再送入 LLM 过滤
-  page_size: 100            # 每页请求数量，建议 <=100
-  max_scan_results: 500     # 单次任务最多扫描多少篇，防止请求过多
-  backfill_days: 14         # 最多回看多少天内的论文
-  delay_seconds: 15         # arXiv 请求间隔；共享服务器建议设大一点
-  num_retries: 1            # 429/503 时不要高频重试
+  # arXiv API 请求配置 / API request settings
+  delay_seconds: 15
+  num_retries: 2
 
-# 去重：seen 用于避免重复进入 LLM，pushed 用于避免重复邮件推送。
+# 推送去重配置 / Push deduplication
 dedupe:
   enabled: true
   state_path: "data/state/papers_state.json"
   keep_days: 180
 
-# LLM 智能过滤。只有未 seen 的候选论文会进入 LLM 过滤。
 llm_filter:
   enabled: true
   threshold: 0.65
-  max_selected: 20
+  max_selected: 40
   fail_open: true
   topic: |
     我关注模型压缩、模型加速、高效多模态大模型、高效长上下文、推理加速、训练加速相关论文。
-    相关方向包括 quantization, pruning, sparsity, distillation, efficient inference,
-    KV cache compression, speculative decoding, long-context efficiency, efficient MLLM/VLM,
-    distributed training, memory-efficient training 等。
-    如果论文只是普通模型、数据集、benchmark 或应用系统，而没有明显效率、压缩、加速或部署贡献，请判为不相关。
 
-# 邮件日报展示设置
-email_digest:
-  max_papers: "all"  # all 表示展示全部 LLM 过滤后的论文；也可设为数字，例如 20
-
+# LLM 配置 / LLM settings
 llm:
-  # provider 可选：openai, gemini, claude, deepseek, vllm
+  # 提供商 / Provider: openai, gemini, claude, deepseek, vllm
   provider: "deepseek"
-
+  
+  # OpenAI 配置 / OpenAI settings
   openai:
-    api_key: ""
-    model: "gpt-4o-mini"
-    base_url: ""
+    api_key: ""  # 在 .env 文件中设置 / Set in .env file
+    model: "gpt-4o-mini"  # gpt-4, gpt-4o, gpt-3.5-turbo
+    base_url: ""  # 可选，用于代理或自定义端点 / Optional for proxy or custom endpoint
     temperature: 0.2
     max_tokens: 8192
-
+  
+  # Google Gemini 配置 / Google Gemini settings
   gemini:
-    api_key: ""
-    model: "gemini-1.5-flash"
+    api_key: ""  # 在 .env 文件中设置 / Set in .env file
+    model: "gemini-1.5-flash"  # gemini-pro, gemini-1.5-flash, gemini-1.5-pro
     temperature: 0.2
     max_tokens: 8192
-
+  
+  # Anthropic Claude 配置 / Anthropic Claude settings
   claude:
-    api_key: ""
-    model: "claude-3-5-sonnet-20241022"
+    api_key: ""  # 在 .env 文件中设置 / Set in .env file
+    model: "claude-3-5-sonnet-20241022"  # claude-3-opus, claude-3-sonnet, claude-3-haiku
     temperature: 0.2
     max_tokens: 8192
-
+  
+  # DeepSeek 配置 / DeepSeek settings
   deepseek:
-    api_key: ""
-    model: "deepseek-chat"
+    api_key: ""  # 在 .env 文件中设置 / Set in .env file
+    model: "deepseek-v4-pro"  # deepseek-chat, deepseek-coder
     base_url: "https://api.deepseek.com"
     temperature: 0.2
     max_tokens: 8192
-
-  # vLLM 或其他 OpenAI-compatible 服务
+  
+  # vLLM（OpenAI 兼容 API）/ vLLM (OpenAI-compatible API)
   vllm:
-    api_key: "EMPTY"
-    model: "your-vllm-model-name"
-    base_url: "http://localhost:8000/v1"
+    api_key: "EMPTY"  # vLLM 通常不需要 API Key / vLLM usually does not require a real API key
+    model: "gpt-oss-120b"  # 你部署的模型名称 example: gpt-oss-120b
+    base_url: "http://localhost:8000/v1"  # vLLM 服务地址 example: http://localhost:8000/v1
     temperature: 0.2
     max_tokens: 8192
 
-scheduler:
-  enabled: true
-  run_time: "09:00"
-  timezone: "Asia/Shanghai"
-  run_on_start: false
-  misfire_grace_time: 300  # 允许任务因系统调度等原因最多延迟 5 分钟启动
 
+# 调度配置 / Scheduler settings
+scheduler:
+  # 是否启用自动调度 / Enable automatic scheduling
+  enabled: true
+  
+  # 运行时间（24小时制，HH:MM 格式）/ Run time (24-hour format, HH:MM)
+  run_time: "09:00"
+  
+  # 时区 / Timezone
+  timezone: "Asia/Shanghai"
+  
+  # 启动时是否立即运行一次 / Run once on startup
+  run_on_start: true
+  
+  # 邮件通知配置（可选）/ Email notification settings (optional)
   notification:
     enabled: true
     email:
-      smtp_server: "smtp.gmail.com"
-      smtp_port: 587
-      sender: "your-email@example.com"
-      password: ""  # 推荐在 .env 中设置 EMAIL_PASSWORD
-      recipients:
-        - "recipient@example.com"
-      on_success: true
-      on_failure: true
+      smtp_server: "smtp.163.com"
+      smtp_port: 465
+      sender: "your_email@example.com"  # 发件人邮箱 / Sender email
+      password: ""  # 在 .env 文件中设置 EMAIL_PASSWORD / Set EMAIL_PASSWORD in .env
+      recipients:  # 收件人列表 / Recipient list
+        - "your_recipient@example.com"
+      on_success: true  # 成功时发送通知 / Notify on success
+      on_failure: true  # 失败时发送通知 / Notify on failure
 
+# 数据存储配置 / Data storage settings
 storage:
+  # 存储类型 / Storage type: json 或 sqlite
   type: "json"
+  
+  # JSON 存储路径 / JSON storage path
   json_path: "data/papers"
+  
+  # SQLite 数据库路径 / SQLite database path
   sqlite_path: "data/arxiv.db"
-  retention_days: 30
+  
+  # 保留历史数据的天数（0 表示永久保留）/ Retention days (0 means keep forever)
+  retention_days: 5
 
+# 日志配置 / Logging settings
+
+# 可视化配置 / Visualization settings
+viz:
+  # 词云中文字体路径（留空则自动查找）/ Chinese font path for wordcloud (leave empty to auto-detect)
+  font_path: ""
 logging:
-  level: "INFO"
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   file: "logs/daily_arxiv.log"
   console: true
+
+
+adaptive_fetch:
+  enabled: true
+
+  # 希望每天至少拿到多少篇“没 seen 过”的候选论文，之后再送进 LLM
+  min_unseen_papers: 400
+
+  # 每次向 arXiv 请求一页多少篇
+  page_size: 50
+
+  # 最多向后扫描多少篇，防止无限请求
+  max_scan_results: 1000
+
+  # 如果最近 2 天没有足够新论文，允许向前回溯多少天
+  backfill_days: 3
+
+  # arXiv 请求间隔，之前你遇到 429，所以这里保守一点
+  delay_seconds: 30
+
+  # 429/503 时不要疯狂重试
+  num_retries: 1

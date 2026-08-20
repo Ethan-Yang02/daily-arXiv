@@ -216,6 +216,41 @@ class TrendAnalyzer:
         
         return topics
     
+    def _resolve_font_path(self) -> str:
+        """解析中文字体路径 / Resolve Chinese font path."""
+        import glob
+
+        font_path = (self.config.get("viz", {}) or {}).get("font_path", "")
+        if font_path and Path(font_path).exists():
+            return font_path
+
+        candidates = [
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+            "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+            "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
+            "/System/Library/Fonts/PingFang.ttc",
+            "/System/Library/Fonts/STHeiti Light.ttc",
+            "C:/Windows/Fonts/msyh.ttc",
+            "C:/Windows/Fonts/simsun.ttc",
+        ]
+
+        for path in candidates:
+            if Path(path).exists():
+                return path
+
+        for pattern in [
+            "/usr/share/fonts/**/Noto*CJK*.ttc",
+            "/usr/share/fonts/**/wqy*.ttc",
+        ]:
+            matches = glob.glob(pattern, recursive=True)
+            if matches:
+                return matches[0]
+
+        return ""
+
     def _generate_wordcloud(self, papers: List[Dict[str, Any]]) -> str:
         """生成词云图
         
@@ -234,17 +269,25 @@ class TrendAnalyzer:
         # 清理文本 / Clean text
         text = re.sub(r'[^\w\s]', ' ', text.lower())
         
+        # 解析字体路径 / Resolve font path
+        font_path = self._resolve_font_path()
+        if font_path:
+            self.logger.info(self.text(f"使用字体: {font_path}", f"Using font: {font_path}"))
+
         # 生成词云 / Generate word cloud
-        wordcloud = WordCloud(
-            width=1600,
-            height=800,
-            background_color='white',
-            stopwords=self.stop_words,
-            max_words=100,
-            relative_scaling=0.5,
-            colormap='viridis',
-            min_font_size=10
-        ).generate(text)
+        wordcloud_kwargs = {
+            "width": 1600,
+            "height": 800,
+            "background_color": "white",
+            "stopwords": self.stop_words,
+            "max_words": 100,
+            "relative_scaling": 0.5,
+            "colormap": "viridis",
+            "min_font_size": 10,
+        }
+        if font_path:
+            wordcloud_kwargs["font_path"] = font_path
+        wordcloud = WordCloud(**wordcloud_kwargs).generate(text)
         
         # 保存图片 / Save image
         output_dir = Path('data/analysis')
@@ -618,7 +661,7 @@ class TrendAnalyzer:
         save_json(analysis, json_path)
         self.logger.info(self.text(f"💾 分析结果已保存: {json_path}", f"💾 Analysis saved: {json_path}"))
         
-        # 保存最新分析，供邮件日报和后续查看使用 / Save latest analysis for email digest and review
+        # 保存最新分析 / Save latest analysis
         latest_path = "data/analysis/latest.json"
         save_json(analysis, latest_path)
         self.logger.info(self.text(f"💾 最新分析已保存: {latest_path}", f"💾 Latest analysis saved: {latest_path}"))

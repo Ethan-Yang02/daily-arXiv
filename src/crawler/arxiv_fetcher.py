@@ -97,8 +97,8 @@ class ArxivFetcher:
 
         client = arxiv.Client(
             page_size=min(int(self.max_results), 100),
-            delay_seconds=int(self.adaptive_config.get("delay_seconds", 15)),
-            num_retries=int(self.adaptive_config.get("num_retries", 2)),
+            delay_seconds=int(self.arxiv_config.get("delay_seconds", 15)),
+            num_retries=int(self.arxiv_config.get("num_retries", 2)),
         )
 
         papers = []
@@ -307,7 +307,7 @@ class ArxivFetcher:
     def _save_papers(self, papers: List[Dict[str, Any]]):
         """保存论文数据 / Save papers。
 
-        注意：即使 papers 为空，也会覆盖 latest.json，避免 Web/邮件继续读取旧论文。
+        注意：即使 papers 为空，也会覆盖 latest.json，避免邮件继续读取旧论文。
         """
         papers = papers or []
 

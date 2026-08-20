@@ -1,0 +1,44 @@
+# Daily arXiv Cron Job Example
+# 
+# 如果不想使用 APScheduler，可以使用 Linux cron 实现定时任务
+# 
+# 使用方法:
+# 1. 编辑 crontab: crontab -e
+# 2. 添加以下行（根据实际路径修改）
+# 3. 保存退出
+#
+# Cron 时间格式: 分 时 日 月 周
+# * * * * * command
+# ┬ ┬ ┬ ┬ ┬
+# │ │ │ │ │
+# │ │ │ │ └─── 星期 (0-7, 0和7都代表周日)
+# │ │ │ └───── 月份 (1-12)
+# │ │ └─────── 日期 (1-31)
+# │ └───────── 小时 (0-23)
+# └─────────── 分钟 (0-59)
+
+# 示例 1: 每天上午 9:00 执行
+0 9 * * * cd /path/to/daily-arxiv && /path/to/conda/envs/daily-arxiv/bin/python main.py >> logs/cron.log 2>&1
+
+# 示例 2: 每天上午 9:00 执行，并发送邮件通知
+0 9 * * * cd /path/to/daily-arxiv && /path/to/conda/envs/daily-arxiv/bin/python main.py >> logs/cron.log 2>&1 && echo "Daily arXiv task completed at $(date)" | mail -s "Daily arXiv Success" your-email@example.com
+
+# 示例 3: 每周一上午 9:00 执行
+0 9 * * 1 cd /path/to/daily-arxiv && /path/to/conda/envs/daily-arxiv/bin/python main.py >> logs/cron.log 2>&1
+
+# 示例 4: 每天上午 9:00 和下午 18:00 执行
+0 9,18 * * * cd /path/to/daily-arxiv && /path/to/conda/envs/daily-arxiv/bin/python main.py >> logs/cron.log 2>&1
+
+# 示例 5: 每小时执行一次（用于测试）
+0 * * * * cd /path/to/daily-arxiv && /path/to/conda/envs/daily-arxiv/bin/python main.py >> logs/cron.log 2>&1
+
+# 实际使用时的建议配置（每天上午 9:00）
+# 请根据实际路径修改以下内容：
+# 0 9 * * * cd /home/jkcrystal/LLM/agent/daily-arxiv && /home/jkcrystal/anaconda3/envs/daily-arxiv/bin/python main.py >> logs/cron.log 2>&1
+
+# 查看 cron 日志
+# Ubuntu/Debian: tail -f /var/log/syslog | grep CRON
+# CentOS/RHEL: tail -f /var/log/cron
+
+# 测试 cron 任务（每分钟执行一次，仅用于测试）
+# * * * * * cd /path/to/daily-arxiv && /path/to/conda/envs/daily-arxiv/bin/python main.py >> logs/cron.log 2>&1
