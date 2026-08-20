@@ -45,7 +45,6 @@ Automatically track the latest AI research papers on arXiv each day, use LLMs fo
   - Separate success/failure notices  
   - Detailed statistics  
 
-![alt text](resources/image0.png)![alt text](resources/image1.png)![alt text](resources/image2.png)
 
 ## 🚀 Quick Start
 

@@ -44,7 +44,6 @@
   - 成功/失败分别通知
   - 详细统计信息
 
-![alt text](resources/image0.png)![alt text](resources/image1.png)![alt text](resources/image2.png)
 
 ## 🚀 快速开始
 
